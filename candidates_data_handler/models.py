@@ -2,7 +2,6 @@ from sqlalchemy import (
     Column, Integer, String, Table, ForeignKey, create_engine
 )
 from sqlalchemy.orm import relationship, declarative_base, sessionmaker
-from typing import List
 
 Base = declarative_base()
 

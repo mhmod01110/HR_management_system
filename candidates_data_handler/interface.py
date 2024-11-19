@@ -14,13 +14,13 @@ candidate_manager = CandidateManager(session)
 
 # Use Case 1: Create a Candidate
 def create_candidate_interface(
-    name: str,
-    email: Optional[str],
-    phone_num: Optional[str],
+    name: str, 
+    email: Optional[str], 
+    phone_num: Optional[str], 
     experience_years: int,
-    certificates: Optional[List[int]] = None,
-    qualifications: Optional[List[int]] = None,
-    skills: Optional[List[int]] = None,
+    certificates: Optional[List[str]] = None,
+    qualifications: Optional[List[str]] = None,
+    skills: Optional[List[str]] = None,
 ):
     try:
         candidate = candidate_manager.create_candidate(
@@ -54,19 +54,19 @@ def get_all_candidates_interface():
     return candidates
 
 
-# Use Case 4: Update Candidate by ID
-def update_candidate_interface(
-    candidate_id: int,
-    name: Optional[str] = None,
-    email: Optional[str] = None,
-    phone_num: Optional[str] = None,
+# Use Case 4: edit Candidate by ID
+def edit_candidate_interface(
+    candidate_id: int, 
+    name: Optional[str] = None, 
+    email: Optional[str] = None, 
+    phone_num: Optional[str] = None, 
     experience_years: Optional[int] = None,
-    certificates: Optional[List[int]] = None,
-    qualifications: Optional[List[int]] = None,
-    skills: Optional[List[int]] = None,
+    certificates: Optional[List[str]] = None,
+    qualifications: Optional[List[str]] = None,
+    skills: Optional[List[str]] = None,
 ):
     try:
-        candidate = candidate_manager.update_by_id(
+        candidate = candidate_manager.edit_by_id(
             candidate_id,
             name=name,
             email=email,
@@ -143,4 +143,4 @@ def print_all_candidates_interface():
 
         print("-" * 50)
 
-print_all_candidates_interface()
+# print_all_candidates_interface()

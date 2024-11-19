@@ -13,21 +13,23 @@ class CandidateManager:
 
     def is_phone_num_unique(self, phone_num: str) -> bool:
         return self.session.query(Candidate).filter_by(phone_num=phone_num).first() is None
-
+    
     def create_candidate(
         self, 
         name: str, 
         email: Optional[str], 
         phone_num: Optional[str], 
         experience_years: int,
-        certificates: Optional[List[int]] = None,
-        qualifications: Optional[List[int]] = None,
-        skills: Optional[List[int]] = None,
+        certificates: Optional[List[str]] = None,
+        qualifications: Optional[List[str]] = None,
+        skills: Optional[List[str]] = None,
     ) -> Candidate:
         if email and not self.is_email_unique(email):
-            raise ValueError("Email is already in use.")
+            print("Email is already in use.")
+            return
         if phone_num and not self.is_phone_num_unique(phone_num):
-            raise ValueError("Phone number is already in use.")
+            print("Phone number is already in use.")
+            return
 
         candidate = Candidate(
             name=name,
@@ -36,20 +38,41 @@ class CandidateManager:
             experience_years=experience_years,
         )
 
+        # Add certificates
         if certificates:
-            candidate.certificates = self.session.query(Certificate).filter(Certificate.id.in_(certificates)).all()
+            candidate.certificates = [
+                self.get_or_create(Certificate, name=cert_name) for cert_name in certificates
+            ]
+
+        # Add qualifications
         if qualifications:
-            candidate.extra_qualifications = self.session.query(Qualification).filter(Qualification.id.in_(qualifications)).all()
+            candidate.extra_qualifications = [
+                self.get_or_create(Qualification, name=qual_name) for qual_name in qualifications
+            ]
+
+        # Add skills
         if skills:
-            candidate.skills = self.session.query(Skill).filter(Skill.id.in_(skills)).all()
+            candidate.skills = [
+                self.get_or_create(Skill, name=skill_name) for skill_name in skills
+            ]
 
         self.session.add(candidate)
         try:
             self.session.commit()
         except IntegrityError:
             self.session.rollback()
-            raise ValueError("Failed to create candidate due to integrity issues.")
+            print("Failed to create candidate due to integrity issues.")
         return candidate
+
+    def get_or_create(self, model, **kwargs):
+        """Fetch an object by attributes or create it if it doesn’t exist."""
+        instance = self.session.query(model).filter_by(**kwargs).first()
+        if instance:
+            return instance
+        instance = model(**kwargs)
+        self.session.add(instance)
+        self.session.commit()
+        return instance
 
     def get_by_id(self, candidate_id: int) -> Optional[Candidate]:
         return self.session.query(Candidate).get(candidate_id)
@@ -57,42 +80,58 @@ class CandidateManager:
     def get_all(self) -> List[Candidate]:
         return self.session.query(Candidate).all()
 
-    def update_by_id(
+    def edit_by_id(
         self, 
         candidate_id: int, 
         name: Optional[str] = None, 
         email: Optional[str] = None, 
         phone_num: Optional[str] = None, 
         experience_years: Optional[int] = None,
-        certificates: Optional[List[int]] = None,
-        qualifications: Optional[List[int]] = None,
-        skills: Optional[List[int]] = None,
+        certificates: Optional[List[str]] = None,
+        qualifications: Optional[List[str]] = None,
+        skills: Optional[List[str]] = None,
     ) -> Optional[Candidate]:
         candidate = self.get_by_id(candidate_id)
         if not candidate:
+            print("Candidate not found.")
             return None
 
         if name:
             candidate.name = name
         if email:
             if email != candidate.email and not self.is_email_unique(email):
-                raise ValueError("Email is already in use.")
+                print("Email is already in use.")
+                return
             candidate.email = email
         if phone_num:
             if phone_num != candidate.phone_num and not self.is_phone_num_unique(phone_num):
-                raise ValueError("Phone number is already in use.")
+                print("Phone number is already in use.")
+                return
             candidate.phone_num = phone_num
         if experience_years is not None:
             candidate.experience_years = experience_years
-        if certificates:
-            candidate.certificates = self.session.query(Certificate).filter(Certificate.id.in_(certificates)).all()
-        if qualifications:
-            candidate.extra_qualifications = self.session.query(Qualification).filter(Qualification.id.in_(qualifications)).all()
-        if skills:
-            candidate.skills = self.session.query(Skill).filter(Skill.id.in_(skills)).all()
+
+        # edit certificates
+        if certificates is not None:
+            candidate.certificates = [
+                self.get_or_create(Certificate, name=cert_name) for cert_name in certificates
+            ]
+
+        # edit qualifications
+        if qualifications is not None:
+            candidate.extra_qualifications = [
+                self.get_or_create(Qualification, name=qual_name) for qual_name in qualifications
+            ]
+
+        # edit skills
+        if skills is not None:
+            candidate.skills = [
+                self.get_or_create(Skill, name=skill_name) for skill_name in skills
+            ]
 
         self.session.commit()
         return candidate
+
 
     def delete(self, candidate_id: int) -> bool:
         candidate = self.get_by_id(candidate_id)
@@ -107,12 +146,20 @@ class CandidateManager:
         candidates = self.get_all()
         with open(file_path, mode="w", newline="") as file:
             writer = csv.writer(file)
-            writer.writerow(["ID", "Name", "Email", "Phone Number", "Experience Years"])
+            # Header
+            writer.writerow([
+                "ID", "Name", "Email", "Phone Number", 
+                "Experience Years", "Certificates", 
+                "Qualifications", "Skills"
+            ])
             for candidate in candidates:
                 writer.writerow([
-                    candidate.id, 
-                    candidate.name, 
-                    candidate.email, 
-                    candidate.phone_num, 
+                    candidate.id,
+                    candidate.name,
+                    candidate.email,
+                    candidate.phone_num,
                     candidate.experience_years,
+                    ", ".join([cert.name for cert in candidate.certificates]) if candidate.certificates else "",
+                    ", ".join([qual.name for qual in candidate.extra_qualifications]) if candidate.extra_qualifications else "",
+                    ", ".join([skill.name for skill in candidate.skills]) if candidate.skills else "",
                 ])

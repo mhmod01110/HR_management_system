@@ -13,164 +13,89 @@ from PyQt5.QtWidgets import (
     QDialog, QLineEdit, QComboBox, QDialogButtonBox, QSpinBox, QMessageBox
 )
 from PyQt5.QtGui import QFont, QIcon
-from PyQt5.QtCore import Qt
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, pyqtSignal
 
-class CreateCandidateDialog(QDialog):
+class IntroPage(QWidget):
+    login_successful = pyqtSignal()
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Create New Candidate")
+        self.setWindowTitle("Welcome to HR-Candidates Management System")
+        self.setFixedSize(400, 500)
+        self.setStyleSheet("background-color: #f0f0f0;")  # Light background color
+        self.icons_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "icons"))
 
-        # Layout for the form
-        layout = QVBoxLayout()
+        # Main layout
+        self.main_layout = QVBoxLayout()
+        self.main_layout.setAlignment(Qt.AlignCenter)
 
-        # Form layout for candidate data input
-        form_layout = QFormLayout()
+        # Create content layout
+        self.content_layout = self.create_layout()
 
-        # Input fields
-        self.name_input = QLineEdit()
-        self.email_input = QLineEdit()
-        self.phone_num_input = QLineEdit()
-        self.experience_years_input = QSpinBox()
-        self.experience_years_input.setMinimum(0)
-        self.experience_years_input.setMaximum(50)
-
-        # List fields for certificates, qualifications, and skills
-        self.certificates_input = QLineEdit()
-        self.qualifications_input = QLineEdit()
-        self.skills_input = QLineEdit()
-
-        # Instructions for list fields
-        list_instructions = QLabel("Enter items separated by commas (e.g., 'Cert1, Cert2').")
-
-        # Add input fields to the form
-        form_layout.addRow("Name:", self.name_input)
-        form_layout.addRow("Email:", self.email_input)
-        form_layout.addRow("Phone Number:", self.phone_num_input)
-        form_layout.addRow("Experience Years:", self.experience_years_input)
-        form_layout.addRow("Certificates:", self.certificates_input)
-        form_layout.addRow("Qualifications:", self.qualifications_input)
-        form_layout.addRow("Skills:", self.skills_input)
-
-        # Buttons for submitting or canceling
-        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        button_box.accepted.connect(self.accept)
-        button_box.rejected.connect(self.reject)
-
-        # Add widgets to the dialog layout
-        layout.addWidget(list_instructions)
-        layout.addLayout(form_layout)
-        layout.addWidget(button_box)
-
-        self.setLayout(layout)
-
-    def get_candidate_data(self):
-        """Return the candidate data entered in the dialog."""
-        return {
-            'name': self.name_input.text(),
-            'email': self.email_input.text(),
-            'phone_num': self.phone_num_input.text(),
-            'experience_years': self.experience_years_input.value(),
-            'certificates': [item.strip() for item in self.certificates_input.text().split(",") if item.strip()],
-            'qualifications': [item.strip() for item in self.qualifications_input.text().split(",") if item.strip()],
-            'skills': [item.strip() for item in self.skills_input.text().split(",") if item.strip()],
-        }
-
-
-class UpdateCandidateDialog(CreateCandidateDialog):
-    def __init__(self, candidate_data):
-        super().__init__()
-        self.setWindowTitle("Update Candidate")
-
-        # Pre-fill the fields with existing candidate data
-        self.name_input.setText(candidate_data.get("name", ""))
-        self.email_input.setText(candidate_data.get("email", ""))
-        self.phone_num_input.setText(candidate_data.get("phone_num", ""))
-        self.experience_years_input.setValue(candidate_data.get("experience_years", 0))
-        self.certificates_input.setText(", ".join(candidate_data.get("certificates", [])))
-        self.qualifications_input.setText(", ".join(candidate_data.get("qualifications", [])))
-        self.skills_input.setText(", ".join(candidate_data.get("skills", [])))
-
-
-class CandidatesManagementPage(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setLayout(self.create_layout())
+        # Add content to the center of the page
+        self.main_layout.addLayout(self.content_layout)
+        self.setLayout(self.main_layout)
 
     def create_layout(self):
-        """Set up the layout for the candidates page."""
+        # Main vertical layout for logo and login box
         layout = QVBoxLayout()
+        layout.setAlignment(Qt.AlignCenter)
 
-        # Title Label
-        label = QLabel("Candidates Management")
-        label.setFont(QFont("Arial", 18, QFont.Bold))
-        label.setAlignment(Qt.AlignCenter)
-        label.setStyleSheet("color: black;")
-        layout.addWidget(label)
+        # Logo
+        logo_label = QLabel()
+        logo_img = "logo.jpg"
+        logo_path = os.path.join(self.icons_path, logo_img)
 
-        # Table to show candidates
-        self.candidate_table = QTableWidget()
-        self.candidate_table.setColumnCount(6)
-        self.candidate_table.setHorizontalHeaderLabels(
-            ["ID", "Name", "Email", "Phone Number", "Experience Years", "Certificates"]
-        )
-        self.populate_candidate_table()
-        layout.addWidget(self.candidate_table)
+        if os.path.exists(logo_path):
+            logo_label.setPixmap(QIcon(logo_path).pixmap(300, 300))  # Adjust size as needed
+        else:
+            logo_label.setText("Logo Here")  # Placeholder if the logo doesn't exist
+            logo_label.setAlignment(Qt.AlignCenter)
+            logo_label.setStyleSheet("color: #999; font-size: 18px;")
 
-        # Buttons for CRUD operations
-        self.create_candidate_button = QPushButton("Create Candidate")
-        self.update_candidate_button = QPushButton("Update Candidate")
-        self.delete_candidate_button = QPushButton("Delete Candidate")
+        # Login form layout
+        login_layout = QVBoxLayout()
+        login_layout.setSpacing(15)
 
-        self.create_candidate_button.clicked.connect(self.show_create_candidate_dialog)
-        self.update_candidate_button.clicked.connect(self.update_candidate)
-        self.delete_candidate_button.clicked.connect(self.delete_candidate)
+        username_label = QLabel("Username:")
+        username_label.setFont(QFont("Arial", 12))
+        self.username_input = QLineEdit()
+        self.username_input.setPlaceholderText("Enter your username")
+        self.username_input.setFont(QFont("Arial", 10))
+        self.username_input.setStyleSheet("background-color: white;")
 
-        button_layout = QHBoxLayout()
-        button_layout.addWidget(self.create_candidate_button)
-        button_layout.addWidget(self.update_candidate_button)
-        button_layout.addWidget(self.delete_candidate_button)
-        layout.addLayout(button_layout)
+        password_label = QLabel("Password:")
+        password_label.setFont(QFont("Arial", 12))
+        self.password_input = QLineEdit()
+        self.password_input.setEchoMode(QLineEdit.Password)
+        self.password_input.setPlaceholderText("Enter your password")
+        self.password_input.setFont(QFont("Arial", 10))
+        self.password_input.setStyleSheet("background-color: white;")
+
+
+        login_button = QPushButton("Login")
+        login_button.setFont(QFont("Arial", 12, QFont.Bold))
+        login_button.setStyleSheet("background-color: #007BFF; color: white; border-radius: 5px; padding: 5px;")
+        login_button.clicked.connect(self.handle_login)
+
+        # Add widgets to the login form
+        login_layout.addWidget(username_label)
+        login_layout.addWidget(self.username_input)
+        login_layout.addWidget(password_label)
+        login_layout.addWidget(self.password_input)
+        login_layout.addWidget(login_button)
+
+        # Add logo and form to the main layout
+        layout.addWidget(logo_label)
+        layout.addLayout(login_layout)
 
         return layout
 
-    def populate_candidate_table(self):
-        """Populate the candidates table with data from the database."""
-        candidates = get_all_candidates_interface()
-        self.candidate_table.setRowCount(len(candidates))
-        for row, candidate in enumerate(candidates):
-            self.candidate_table.setItem(row, 0, QTableWidgetItem(str(candidate.id)))
-            self.candidate_table.setItem(row, 1, QTableWidgetItem(candidate.name))
-            self.candidate_table.setItem(row, 2, QTableWidgetItem(candidate.email or "N/A"))
-            self.candidate_table.setItem(row, 3, QTableWidgetItem(candidate.phone_num or "N/A"))
-            self.candidate_table.setItem(row, 4, QTableWidgetItem(str(candidate.experience_years)))
-            certificates = ", ".join([cert.name for cert in candidate.certificates])
-            self.candidate_table.setItem(row, 5, QTableWidgetItem(certificates or "N/A"))
+    def handle_login(self):
+        username = self.username_input.text()
+        password = self.password_input.text()
 
-    def show_create_candidate_dialog(self):
-        """Show the Create Candidate dialog."""
-        dialog = CreateCandidateDialog()
-        if dialog.exec() == QDialog.Accepted:
-            candidate_data = dialog.get_candidate_data()
-            create_candidate_interface(**candidate_data)
-            self.populate_candidate_table()
-
-    def update_candidate(self):
-        """Update a selected candidate."""
-        selected_row = self.candidate_table.currentRow()
-        if selected_row >= 0:
-            candidate_id = int(self.candidate_table.item(selected_row, 0).text())
-            candidate_data = get_candidate_by_id_interface(candidate_id)
-            dialog = UpdateCandidateDialog(candidate_data)
-            if dialog.exec() == QDialog.Accepted:
-                updated_data = dialog.get_candidate_data()
-                update_candidate_interface(candidate_id, **updated_data)
-                self.populate_candidate_table()
-
-    def delete_candidate(self):
-        """Delete a selected candidate."""
-        selected_row = self.candidate_table.currentRow()
-        if selected_row >= 0:
-            candidate_id = int(self.candidate_table.item(selected_row, 0).text())
-            delete_candidate_interface(candidate_id)
-            self.populate_candidate_table()
+        if username == "admin" and password == "admin":  # Replace with actual validation
+            QMessageBox.information(self, "Login Successful", "Welcome!")
+            self.login_successful.emit()
+        else:
+            QMessageBox.warning(self, "Login Failed", "Invalid username or password.")
