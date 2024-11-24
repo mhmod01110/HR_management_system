@@ -13,8 +13,8 @@ from PyQt5.QtWidgets import (
     QStackedWidget, QLabel, QPushButton, QFormLayout, QTableWidget, QTableWidgetItem,
     QDialog, QLineEdit, QComboBox, QDialogButtonBox, QSpinBox, QMessageBox
 )
-from PyQt5.QtGui import QFont, QIcon, QBrush, QColor
-from PyQt5.QtCore import Qt, QTimer, QPropertyAnimation, QRect
+from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtCore import Qt, QPropertyAnimation, QRect
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -24,14 +24,9 @@ class MainWindow(QWidget):
         self.setStyleSheet("background-color: #ffffff;")
         
         # Set the app icon
-        self.icons_path = (
-            os.path.join(sys._MEIPASS, "icons")  # When running as a bundled app
-            if getattr(sys, "frozen", False)
-            else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "icons"))  # During development
-        )
-
-        self.app_icon_path = os.path.join(self.icons_path, "app_icon.png")  # Make sure "app_icon.png" exists
-        self.setWindowIcon(QIcon(self.app_icon_path))  # Set the icon
+        self.icons_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "icons"))
+        app_icon_path = os.path.join(self.icons_path, "app_icon.png")  # Make sure "app_icon.png" exists
+        self.setWindowIcon(QIcon(app_icon_path))  # Set the icon
 
         # Main layout
         main_layout = QVBoxLayout()
@@ -73,7 +68,29 @@ class MainWindow(QWidget):
             }
         """)
         self.tree_widget.currentItemChanged.connect(self.display_page)
-        sidebar_layout.addWidget(self.tree_widget)
+        
+        self.sidebar_widget = QWidget()
+        self.sidebar_widget.setLayout(sidebar_layout)
+        self.sidebar_widget.setFixedWidth(200)  # Default sidebar width
+
+        # Toggle button
+        self.toggle_button = QPushButton("⮜")
+        self.toggle_button.setFixedWidth(30)
+        self.toggle_button.setStyleSheet("""
+            QPushButton {
+                background-color: #b06614;
+                color: white;
+                font-size: 16px;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: #e6c819;
+            }
+        """)
+        # self.toggle_button.setSizePolicy(QPushButton.Minimum, QPushButton.Expanding)
+        self.toggle_button.clicked.connect(self.toggle_sidebar)
+
+
 
         # Main area (StackedWidget)
         self.stacked_widget = QStackedWidget()
@@ -81,7 +98,7 @@ class MainWindow(QWidget):
         # Intro Page (Login)
         self.intro_page = IntroPage()
         self.intro_page.login_successful.connect(self.enable_candidates_page)  # Connect login signal
-        self.add_tree_item("صفحة الدخول", "login_icon.png", 0)
+        self.add_tree_item("صفحة الدخول", "emails.png", 0)
         self.stacked_widget.addWidget(self.intro_page)  # index 0
         # Automatically select the "Login Page" item
         login_item = self.tree_widget.topLevelItem(0)  # Assuming "Login Page" is the first item
@@ -89,7 +106,7 @@ class MainWindow(QWidget):
 
         # Candidates Management Page
         self.candidates_page = CandidatesManagementPage()
-        self.add_tree_item("صفحة المرشحين", "selected.png", 1, enabled=False)
+        self.add_tree_item("صفحة المرشحين", "users.png", 1, enabled=False)
         self.stacked_widget.addWidget(self.candidates_page)  # index 1
 
         # Logout Tree Item
@@ -97,11 +114,23 @@ class MainWindow(QWidget):
         
         # Combine layouts
         content_layout.addLayout(sidebar_layout, 1)
+        content_layout.addWidget(self.toggle_button)
         content_layout.addWidget(self.stacked_widget, 4)
         main_layout.addLayout(content_layout)
 
         self.setLayout(main_layout)
+        self.sidebar_visible = True
 
+    def toggle_sidebar(self):
+        """Toggle the visibility of the sidebar."""
+        if self.sidebar_visible:
+            self.sidebar_widget.hide()
+            self.toggle_button.setText("⮞")
+        else:
+            self.sidebar_widget.show()
+            self.toggle_button.setText("⮜")
+        self.sidebar_visible = not self.sidebar_visible
+        
     def add_tree_item(self, text, icon_file, page_index, enabled=True):
         """Add an item to the sidebar."""
         item = QTreeWidgetItem()
@@ -109,7 +138,7 @@ class MainWindow(QWidget):
         icon_path = os.path.join(self.icons_path, icon_file)
         item.setIcon(0, QIcon(icon_path))
         item.setData(0, Qt.UserRole, page_index)
-        item.setDisabled(not enabled)
+        item.setDisabled(not enabled)  # Disable item if not enabled
         item.setFont(0, QFont("Arial", 12))
         
         # # Special handling for logout item

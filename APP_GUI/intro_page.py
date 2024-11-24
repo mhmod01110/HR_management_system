@@ -14,15 +14,23 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtWidgets import QLabel
+from PyQt5.QtGui import QPixmap, QCursor
+from PyQt5.QtCore import Qt
 
 class IntroPage(QWidget):
     login_successful = pyqtSignal()
+
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Welcome to HR-Candidates Management System")
-        self.setFixedSize(400, 500)
-        self.setStyleSheet("background-color: #f0f0f0;")  # Light background color
-        self.icons_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "icons"))
+        self.setWindowTitle("مرحباً بكم في برنامج إدارة المرشحين للوظائف")
+        self.setStyleSheet("background-color: #ffffff;")
+        self.icons_path = (
+            os.path.join(sys._MEIPASS, "icons")  # When running as a bundled app
+            if getattr(sys, "frozen", False)
+            else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "icons"))  # During development
+        )
+
 
         # Main layout
         self.main_layout = QVBoxLayout()
@@ -46,43 +54,70 @@ class IntroPage(QWidget):
         logo_path = os.path.join(self.icons_path, logo_img)
 
         if os.path.exists(logo_path):
-            logo_label.setPixmap(QIcon(logo_path).pixmap(300, 300))  # Adjust size as needed
-        else:
-            logo_label.setText("Logo Here")  # Placeholder if the logo doesn't exist
+            logo_label.setPixmap(QPixmap(logo_path).scaled(500, 500, Qt.KeepAspectRatio))
             logo_label.setAlignment(Qt.AlignCenter)
-            logo_label.setStyleSheet("color: #999; font-size: 18px;")
+        else:
+            logo_label.setText("Logo Here")
+            logo_label.setStyleSheet("color: #333; font-size: 18px;")
 
         # Login form layout
         login_layout = QVBoxLayout()
         login_layout.setSpacing(15)
 
-        username_label = QLabel("Username:")
+        username_label = QLabel("اسم المستخدم:")
         username_label.setFont(QFont("Arial", 12))
+        username_label.setStyleSheet("background-color: #ffffff;")
         self.username_input = QLineEdit()
-        self.username_input.setPlaceholderText("Enter your username")
-        self.username_input.setFont(QFont("Arial", 10))
-        self.username_input.setStyleSheet("background-color: white;")
+        self.username_input.setPlaceholderText("ادخل اسم المستخدم")
+        self.username_input.setFont(QFont("Arial", 12))
+        self.username_input.setStyleSheet("background-color: #f0f0f0; border-radius: 10px; padding: 10px;")
+        self.username_input.returnPressed.connect(self.handle_login)
 
-        password_label = QLabel("Password:")
+        password_label = QLabel("كلمة المرور:")
         password_label.setFont(QFont("Arial", 12))
+        password_label.setStyleSheet("background-color: #ffffff;")
         self.password_input = QLineEdit()
         self.password_input.setEchoMode(QLineEdit.Password)
-        self.password_input.setPlaceholderText("Enter your password")
-        self.password_input.setFont(QFont("Arial", 10))
-        self.password_input.setStyleSheet("background-color: white;")
+        self.password_input.setPlaceholderText("ادخل كلمة المرور")
+        self.password_input.setFont(QFont("Arial", 12))
+        self.password_input.setStyleSheet("background-color: #f0f0f0; border-radius: 10px; padding: 10px;")
+        self.password_input.returnPressed.connect(self.handle_login)
 
+        # Interactive image button
+        self.image_button = QLabel()
+        button_img = "login.png"  # Replace with your image file
+        button_path = os.path.join(self.icons_path, button_img)
 
-        login_button = QPushButton("Login")
-        login_button.setFont(QFont("Arial", 12, QFont.Bold))
-        login_button.setStyleSheet("background-color: #007BFF; color: white; border-radius: 5px; padding: 5px;")
-        login_button.clicked.connect(self.handle_login)
+        if os.path.exists(button_path):
+            self.image_button.setPixmap(QPixmap(button_path).scaled(100, 100, Qt.KeepAspectRatio))
+        else:
+            self.image_button.setText("Login Button")
+            self.image_button.setAlignment(Qt.AlignCenter)
+
+        self.image_button.setCursor(QCursor(Qt.PointingHandCursor))
+        self.image_button.setAlignment(Qt.AlignCenter)
+
+        # Style for hover effect
+        self.image_button.setStyleSheet("""
+            QLabel {
+                background-color: none;
+            }
+            QLabel:hover {
+                transform: scale(1.1);
+                border: 2px solid #007BFF;
+                border-radius: 20px;
+            }
+        """)
+
+        # Connect the click event
+        self.image_button.mousePressEvent = self.handle_login
 
         # Add widgets to the login form
         login_layout.addWidget(username_label)
         login_layout.addWidget(self.username_input)
         login_layout.addWidget(password_label)
         login_layout.addWidget(self.password_input)
-        login_layout.addWidget(login_button)
+        login_layout.addWidget(self.image_button)
 
         # Add logo and form to the main layout
         layout.addWidget(logo_label)
@@ -90,12 +125,12 @@ class IntroPage(QWidget):
 
         return layout
 
-    def handle_login(self):
+    def handle_login(self, event=None):
         username = self.username_input.text()
         password = self.password_input.text()
 
         if username == "admin" and password == "admin":  # Replace with actual validation
-            QMessageBox.information(self, "Login Successful", "Welcome!")
+            QMessageBox.information(self, "تم تسجيل الدخول بنجاح", "مرحبا بكم !")
             self.login_successful.emit()
         else:
-            QMessageBox.warning(self, "Login Failed", "Invalid username or password.")
+            QMessageBox.warning(self, "خطأ في تسجيل الدخول", "من فضلك تحقق من اسم المستخدم و كلمة المرور")
